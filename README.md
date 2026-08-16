@@ -44,16 +44,30 @@ A escolha da arquitetura de deploy do modelo de Machine Learning determina a via
 O repositório está organizado de forma modular para refletir as etapas do ciclo de vida de desenvolvimento e MLOps:
 
 ```text
-├── .github/workflows/   # Workflows do GitHub Actions (CI/CD)
-├── airflow/             # Scripts e arquivos Python para as DAGs do Airflow
+clinical-triage-mlops/
+├── data/
+│   ├── raw/                          # Dados brutos do dataset Medical TC
+│   │   ├── medical_tc_train.csv
+│   │   ├── medical_tc_test.csv
+│   │   └── medical_tc_labels.csv
+│   └── processed/                    # Dados pré-processados com coluna de urgência
+│       ├── medical_tc_train_processed.csv
+│       └── medical_tc_test_processed.csv
 ├── src/
-│   ├── api/             # Código-fonte da API FastAPI e rotas
-│   ├── model/           # Scripts de treinamento, pré-processamento e otimização
-│   └── monitoring/      # Configurações de instrumentação do Prometheus
-├── docker-compose.yml   # Orquestração local da API, Prometheus e Grafana
-├── Dockerfile           # Instruções de empacotamento da API
-├── pyproject.toml       # Dependências e configurações do projeto (gerenciado via uv)
-└── README.md            # Documentação principal
+│   ├── api/                          # Código-fonte da API FastAPI
+│   │   ├── __init__.py
+│   │   ├── main.py                   # Rotas /health e /predict
+│   │   └── schemas.py                # Schemas Pydantic (request/response)
+│   └── data/                         # Módulo de pré-processamento de dados
+│       ├── __init__.py
+│       └── preprocess.py             # Mapeamento de especialidades → urgência
+├── .pre-commit-config.yaml           # Hooks de pre-commit (Ruff lint + format)
+├── docker-compose.yml                # Orquestração local da API, Prometheus e Grafana
+├── Dockerfile                        # Instruções de empacotamento da API
+├── eda.ipynb                         # Notebook de Análise Exploratória de Dados
+├── pyproject.toml                    # Dependências e configurações (gerenciado via uv)
+├── tech-challenge-fase-3.md          # Especificação do desafio técnico
+└── README.md                         # Documentação principal
 ```
 
 ---
