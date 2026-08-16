@@ -1,0 +1,9 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.0
+    hooks:
+      # Executa o linter para encontrar e corrigir problemas automaticamente
+      - id: ruff
+        args: [ --fix ]
+      # Garante que todo o código está formatado conforme o padrão do Ruff
+      - id: ruff-format
