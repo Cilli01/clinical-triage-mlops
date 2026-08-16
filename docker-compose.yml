@@ -1,0 +1,8 @@
+services:
+  api:
+    build: .
+    image: triagem-api:latest
+    container_name: triagem-api
+    ports:
+      - "8000:8000"
+    
