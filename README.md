@@ -130,9 +130,3 @@ docker-compose up --build -d
 *   **Grafana Dashboard:** `http://localhost:3000` (Credenciais padrão: admin / admin)
 
 ---
-
-## 6. Próximos Passos do Projeto
-- [ ] Implementar as rotas da API em `src/api/main.py`.
-- [ ] Construir o `Dockerfile` otimizado para produção.
-- [ ] Realizar a primeira medição de latência local para estabelecer o baseline.
-- [ ] Configurar os testes unitários (`pytest`) e o linter (`ruff check`) para a Etapa 2.
