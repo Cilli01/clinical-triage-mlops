@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+# tech-challenge instructions
+tech-challenge-fase-3.md

@@ -1,0 +1,28 @@
+[project]
+name = "clinical-triage-mlops"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "matplotlib>=3.11.1",
+    "pandas>=3.0.5",
+    "pre-commit>=4.6.2",
+    "ruff>=0.16.3",
+    "seaborn>=0.13.2",
+]
+
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+# Regras essenciais ativas: 
+# E/W (Pycodestyle/Formatação), F (Pyflakes/Erros de sintaxe lógicos), I (Isort/Organização de Imports)
+select = ["E", "F", "I", "W"]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
