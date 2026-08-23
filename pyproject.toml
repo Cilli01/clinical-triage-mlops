@@ -3,7 +3,7 @@ name = "clinical-triage-mlops"
 version = "0.1.0"
 description = "Sistema de triagem clínica baseado em aprendizado de máquina para o hospital [1, 2]."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.13"
 
 # Dependências MÍNIMAS de produção (apenas o necessário para a API rodar no Docker)
 dependencies = [
