@@ -443,6 +443,7 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
+    { name = "httpx" },
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "ruff" },
@@ -459,6 +460,7 @@ orchestration = [
 requires-dist = [
     { name = "apache-airflow", marker = "extra == 'orchestration'", specifier = ">=2.8.0" },
     { name = "fastapi", specifier = ">=0.110.0" },
+    { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27.0" },
     { name = "matplotlib", marker = "extra == 'eda'", specifier = ">=3.8.0" },
     { name = "pandas", specifier = ">=2.2.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.6.0" },
