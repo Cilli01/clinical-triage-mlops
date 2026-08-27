@@ -3,6 +3,7 @@ import pytest
 
 from src.data.preprocess import preprocess_data
 
+
 def test_preprocess_data(tmp_path):
     input_file = tmp_path / "input.csv"
     output_file = tmp_path / "output.csv"
@@ -26,6 +27,7 @@ def test_preprocess_data(tmp_path):
     assert result["urgency"].tolist() == ["attention", "urgent", "normal"]
     assert output_file.exists()
 
+
 def test_missing_input_file(tmp_path):
     input_file = tmp_path / "does_not_exist.csv"
     output_file = tmp_path / "output.csv"
@@ -33,7 +35,6 @@ def test_missing_input_file(tmp_path):
     with pytest.raises(FileNotFoundError):
         preprocess_data(input_file, output_file)
 
-        
 
 def test_missing_condition_label(tmp_path):
     input_file = tmp_path / "input.csv"

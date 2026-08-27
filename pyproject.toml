@@ -33,6 +33,7 @@ orchestration = [
 [tool.ruff]
 target-version = "py312"
 line-length = 88
+extend-exclude = ["eda.ipynb"]
 
 [tool.ruff.lint]
 # Regras essenciais: Pycodestyle, Pyflakes e Isort para organização automática de imports
