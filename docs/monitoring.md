@@ -4,6 +4,29 @@ Este documento detalha a instrumentação de métricas da API, os painéis do
 dashboard Grafana e como validar localmente que a stack de observabilidade
 está funcionando de ponta a ponta.
 
+## Fluxo de observabilidade
+
+O Prometheus usa o modelo *pull* (ele quem busca as métricas, não a API que
+as envia). O diagrama abaixo mostra o caminho de uma requisição até ela
+aparecer no dashboard:
+
+```mermaid
+flowchart LR
+    Client["Cliente / Hospital"] -->|"POST /predict\nGET /health"| API["API FastAPI"]
+    API -->|"middleware registra\ncontadores e latencia"| Expose["GET /metrics"]
+    Prometheus["Prometheus"] -->|"scrape a cada 15s"| Expose
+    Prometheus -->|"armazena serie temporal"| TSDB[("TSDB")]
+    Grafana["Grafana"] -->|"consulta via PromQL"| Prometheus
+    Team["Equipe"] -->|"visualiza dashboard"| Grafana
+```
+
+Note que a API nunca envia métricas ativamente: ela só expõe o estado atual
+dos contadores em `/metrics`, e é o Prometheus quem raspa esse endpoint
+periodicamente e monta o histórico. É por isso que a API precisa ficar
+sempre no ar (container *always-on*, não serverless com scale-to-zero) —
+se ela não estiver acessível no momento da raspagem, essa janela de tempo
+fica sem dado nenhum.
+
 ## 1. Métricas expostas em `/metrics`
 
 A API expõe métricas no formato Prometheus através do endpoint `GET
