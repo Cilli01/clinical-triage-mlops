@@ -7,6 +7,42 @@ O projeto adota práticas rigorosas de MLOps, abrangendo desde a concepção arq
 
 ---
 
+## Visão Geral da Arquitetura
+
+```mermaid
+flowchart TB
+    subgraph CICD["CI/CD - GitHub Actions"]
+        Push["Push / Pull Request"] --> Lint["Lint - Ruff"]
+        Lint --> Test["Testes - pytest"]
+        Test --> Build["Build da imagem Docker"]
+    end
+
+    subgraph Treino["Orquestracao de Treino - Apache Airflow"]
+        Raw[("Dataset Medical TC")] --> Prep["Pre-processamento"]
+        Prep --> Train["Treino do classificador NLP"]
+        Train --> Model["Modelo treinado / otimizado (ONNX)"]
+    end
+
+    subgraph Stack["Stack Local - Docker Compose"]
+        Hospital["Laudo medico"] --> API["API FastAPI<br/>/predict /health /metrics"]
+        API --> Prom["Prometheus"]
+        Prom --> Graf["Grafana Dashboard"]
+    end
+
+    Build -.->|"imagem publicada"| API
+    Model -.->|"carregar modelo real - pendente"| API
+    Graf --> Equipe["Equipe / Observabilidade"]
+    Stack -.->|"deploy planejado"| Cloud["AWS ECS Fargate + ALB"]
+```
+
+**Legenda:** setas sólidas representam fluxo implementado e em uso hoje;
+setas tracejadas representam integrações planejadas na especificação do
+desafio mas ainda pendentes de implementação (carregamento do modelo
+treinado na API, que hoje responde com uma regra mock, e o deploy em
+nuvem, que hoje existe apenas como decisão documentada na seção 2).
+
+---
+
 ## 1. Contexto Clínico e de Negócio
 
 No cenário de um hospital de referência, a velocidade e a precisão no atendimento de pronto-socorro salvam vidas. A triagem de laudos médicos por métodos puramente manuais gera gargalos operacionais e atrasos na identificação de casos de altíssimo risco (como AVCs, infartos agudos do miocárdio ou hemorragias graves). 
