@@ -5,12 +5,17 @@ vazios. Este script dispara chamadas variadas a /predict (casos normais, de
 atencao e urgentes) e a /health, permitindo observar os paineis dinamicos
 com dados reais.
 
+A escolha da urgencia de cada chamada e sorteada com pesos que aproximam a
+distribuicao real de um pronto-socorro (maioria dos casos e normal/atencao,
+minoria e urgente), em vez de alternar igualmente entre as tres classes.
+
 Uso:
     uv run python scripts/generate_traffic.py --requests 200 --interval 0.2
 """
 
 import argparse
 import json
+import random
 import time
 import urllib.error
 import urllib.request
@@ -31,6 +36,14 @@ ABSTRACTS_BY_URGENCY = {
         "Follow-up visit for a fully healed minor injury",
         "General wellness consultation, no abnormal findings",
     ],
+}
+
+# Distribuicao aproximada de um pronto-socorro real: a maioria dos
+# atendimentos e de baixa complexidade, poucos sao realmente urgentes.
+URGENCY_WEIGHTS = {
+    "normal": 0.65,
+    "attention": 0.25,
+    "urgent": 0.10,
 }
 
 
@@ -66,11 +79,12 @@ def main() -> None:
     parser.add_argument("--interval", type=float, default=0.3)
     args = parser.parse_args()
 
-    urgencies = list(ABSTRACTS_BY_URGENCY.items())
+    urgencies = list(URGENCY_WEIGHTS.keys())
+    weights = list(URGENCY_WEIGHTS.values())
 
     for i in range(args.requests):
-        urgency, abstracts = urgencies[i % len(urgencies)]
-        abstract = abstracts[i % len(abstracts)]
+        urgency = random.choices(urgencies, weights=weights, k=1)[0]
+        abstract = random.choice(ABSTRACTS_BY_URGENCY[urgency])
 
         call_predict(args.base_url, urgency, abstract)
 
