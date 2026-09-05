@@ -12,8 +12,8 @@ aparecer no dashboard:
 
 ```mermaid
 flowchart LR
-    Client["Cliente / Hospital"] -->|"POST /predict\nGET /health"| API["API FastAPI"]
-    API -->|"middleware registra\ncontadores e latencia"| Expose["GET /metrics"]
+    Client["Cliente / Hospital"] -->|"POST /predict<br/>GET /health"| API["API FastAPI"]
+    API -->|"middleware registra<br/>contadores e latencia"| Expose["GET /metrics"]
     Prometheus["Prometheus"] -->|"scrape a cada 15s"| Expose
     Prometheus -->|"armazena serie temporal"| TSDB[("TSDB")]
     Grafana["Grafana"] -->|"consulta via PromQL"| Prometheus
