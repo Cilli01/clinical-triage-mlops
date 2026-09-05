@@ -61,6 +61,10 @@ clinical-triage-mlops/
 │   └── data/                         # Módulo de pré-processamento de dados
 │       ├── __init__.py
 │       └── preprocess.py             # Mapeamento de especialidades → urgência
+├── scripts/
+│   └── generate_traffic.py           # Gera tráfego sintético para validar o dashboard
+├── docs/
+│   └── monitoring.md                 # Documentação das métricas e painéis do Grafana
 ├── .pre-commit-config.yaml           # Hooks de pre-commit (Ruff lint + format)
 ├── docker-compose.yml                # Orquestração local da API, Prometheus e Grafana
 ├── Dockerfile                        # Instruções de empacotamento da API
@@ -128,5 +132,8 @@ docker-compose up --build -d
 *   **FastAPI API REST:** `http://localhost:8000`
 *   **Prometheus Console:** `http://localhost:9090`
 *   **Grafana Dashboard:** `http://localhost:3000` (Credenciais padrão: admin / admin)
+
+Para o detalhamento das métricas expostas, dos painéis do dashboard e do
+passo a passo de validação local, consulte [`docs/monitoring.md`](docs/monitoring.md).
 
 ---
