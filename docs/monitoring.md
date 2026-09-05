@@ -50,5 +50,8 @@ uv run python scripts/generate_traffic.py --requests 200 --interval 0.2
 # http://localhost:3000  (usuario: admin / senha: admin)
 ```
 
-Uma evidência de execução real (screenshot do dashboard com dados) fica em
+Uma evidência de execução real (screenshot do dashboard com dados, capturado
+após subir a stack e gerar tráfego com o script acima) fica em
 [`docs/evidencias/grafana-dashboard.png`](evidencias/grafana-dashboard.png).
+
+![Dashboard Grafana em execução, com dados reais em todos os painéis](evidencias/grafana-dashboard.png)
