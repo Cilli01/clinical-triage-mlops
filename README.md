@@ -81,6 +81,9 @@ O repositório está organizado de forma modular para refletir as etapas do cicl
 
 ```text
 clinical-triage-mlops/
+├── .github/
+│   └── workflows/
+│       └── ci.yml                    # Pipeline de CI/CD (lint → test → build)
 ├── data/
 │   ├── raw/                          # Dados brutos do dataset Medical TC
 │   │   ├── medical_tc_train.csv
@@ -89,24 +92,35 @@ clinical-triage-mlops/
 │   └── processed/                    # Dados pré-processados com coluna de urgência
 │       ├── medical_tc_train_processed.csv
 │       └── medical_tc_test_processed.csv
+├── docs/
+│   ├── evidencias/
+│   │   └── grafana-dashboard.png     # Print do dashboard em execução, com dados reais
+│   └── monitoring.md                 # Documentação das métricas e painéis do Grafana
+├── grafana/
+│   └── provisioning/
+│       ├── dashboards/                # Dashboard do Grafana provisionado automaticamente
+│       └── datasources/               # Datasource do Prometheus provisionado automaticamente
+├── prometheus/
+│   └── prometheus.yml                # Configuração de scrape do Prometheus
+├── scripts/
+│   └── generate_traffic.py           # Gera tráfego sintético para validar o dashboard
 ├── src/
 │   ├── api/                          # Código-fonte da API FastAPI
 │   │   ├── __init__.py
-│   │   ├── main.py                   # Rotas /health e /predict
+│   │   ├── main.py                   # Rotas /health, /predict e /metrics
 │   │   └── schemas.py                # Schemas Pydantic (request/response)
 │   └── data/                         # Módulo de pré-processamento de dados
 │       ├── __init__.py
 │       └── preprocess.py             # Mapeamento de especialidades → urgência
-├── scripts/
-│   └── generate_traffic.py           # Gera tráfego sintético para validar o dashboard
-├── docs/
-│   └── monitoring.md                 # Documentação das métricas e painéis do Grafana
+├── tests/
+│   ├── test_api.py                   # Testes dos endpoints /health e /predict
+│   ├── test_metrics.py               # Testes da instrumentação Prometheus
+│   └── test_preprocess.py            # Testes do pré-processamento de dados
 ├── .pre-commit-config.yaml           # Hooks de pre-commit (Ruff lint + format)
 ├── docker-compose.yml                # Orquestração local da API, Prometheus e Grafana
 ├── Dockerfile                        # Instruções de empacotamento da API
 ├── eda.ipynb                         # Notebook de Análise Exploratória de Dados
 ├── pyproject.toml                    # Dependências e configurações (gerenciado via uv)
-├── tech-challenge-fase-3.md          # Especificação do desafio técnico
 └── README.md                         # Documentação principal
 ```
 
