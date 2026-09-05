@@ -7,6 +7,42 @@ O projeto adota práticas rigorosas de MLOps, abrangendo desde a concepção arq
 
 ---
 
+## Visão Geral da Arquitetura
+
+```mermaid
+flowchart TB
+    subgraph CICD["CI/CD - GitHub Actions"]
+        Push["Push / Pull Request"] --> Lint["Lint - Ruff"]
+        Lint --> Test["Testes - pytest"]
+        Test --> Build["Build da imagem Docker"]
+    end
+
+    subgraph Treino["Orquestracao de Treino - Apache Airflow"]
+        Raw[("Dataset Medical TC")] --> Prep["Pre-processamento"]
+        Prep --> Train["Treino do classificador NLP"]
+        Train --> Model["Modelo treinado / otimizado (ONNX)"]
+    end
+
+    subgraph Stack["Stack Local - Docker Compose"]
+        Hospital["Laudo medico"] --> API["API FastAPI<br/>/predict /health /metrics"]
+        API --> Prom["Prometheus"]
+        Prom --> Graf["Grafana Dashboard"]
+    end
+
+    Build -.->|"imagem publicada"| API
+    Model -.->|"carregar modelo real - pendente"| API
+    Graf --> Equipe["Equipe / Observabilidade"]
+    Stack -.->|"deploy planejado"| Cloud["AWS ECS Fargate + ALB"]
+```
+
+**Legenda:** setas sólidas representam fluxo implementado e em uso hoje;
+setas tracejadas representam integrações planejadas na especificação do
+desafio mas ainda pendentes de implementação (carregamento do modelo
+treinado na API, que hoje responde com uma regra mock, e o deploy em
+nuvem, que hoje existe apenas como decisão documentada na seção 2).
+
+---
+
 ## 1. Contexto Clínico e de Negócio
 
 No cenário de um hospital de referência, a velocidade e a precisão no atendimento de pronto-socorro salvam vidas. A triagem de laudos médicos por métodos puramente manuais gera gargalos operacionais e atrasos na identificação de casos de altíssimo risco (como AVCs, infartos agudos do miocárdio ou hemorragias graves). 
@@ -45,6 +81,9 @@ O repositório está organizado de forma modular para refletir as etapas do cicl
 
 ```text
 clinical-triage-mlops/
+├── .github/
+│   └── workflows/
+│       └── ci.yml                    # Pipeline de CI/CD (lint → test → build)
 ├── data/
 │   ├── raw/                          # Dados brutos do dataset Medical TC
 │   │   ├── medical_tc_train.csv
@@ -53,20 +92,35 @@ clinical-triage-mlops/
 │   └── processed/                    # Dados pré-processados com coluna de urgência
 │       ├── medical_tc_train_processed.csv
 │       └── medical_tc_test_processed.csv
+├── docs/
+│   ├── evidencias/
+│   │   └── grafana-dashboard.png     # Print do dashboard em execução, com dados reais
+│   └── monitoring.md                 # Documentação das métricas e painéis do Grafana
+├── grafana/
+│   └── provisioning/
+│       ├── dashboards/                # Dashboard do Grafana provisionado automaticamente
+│       └── datasources/               # Datasource do Prometheus provisionado automaticamente
+├── prometheus/
+│   └── prometheus.yml                # Configuração de scrape do Prometheus
+├── scripts/
+│   └── generate_traffic.py           # Gera tráfego sintético para validar o dashboard
 ├── src/
 │   ├── api/                          # Código-fonte da API FastAPI
 │   │   ├── __init__.py
-│   │   ├── main.py                   # Rotas /health e /predict
+│   │   ├── main.py                   # Rotas /health, /predict e /metrics
 │   │   └── schemas.py                # Schemas Pydantic (request/response)
 │   └── data/                         # Módulo de pré-processamento de dados
 │       ├── __init__.py
 │       └── preprocess.py             # Mapeamento de especialidades → urgência
+├── tests/
+│   ├── test_api.py                   # Testes dos endpoints /health e /predict
+│   ├── test_metrics.py               # Testes da instrumentação Prometheus
+│   └── test_preprocess.py            # Testes do pré-processamento de dados
 ├── .pre-commit-config.yaml           # Hooks de pre-commit (Ruff lint + format)
 ├── docker-compose.yml                # Orquestração local da API, Prometheus e Grafana
 ├── Dockerfile                        # Instruções de empacotamento da API
 ├── eda.ipynb                         # Notebook de Análise Exploratória de Dados
 ├── pyproject.toml                    # Dependências e configurações (gerenciado via uv)
-├── tech-challenge-fase-3.md          # Especificação do desafio técnico
 └── README.md                         # Documentação principal
 ```
 
@@ -128,5 +182,8 @@ docker-compose up --build -d
 *   **FastAPI API REST:** `http://localhost:8000`
 *   **Prometheus Console:** `http://localhost:9090`
 *   **Grafana Dashboard:** `http://localhost:3000` (Credenciais padrão: admin / admin)
+
+Para o detalhamento das métricas expostas, dos painéis do dashboard e do
+passo a passo de validação local, consulte [`docs/monitoring.md`](docs/monitoring.md).
 
 ---
