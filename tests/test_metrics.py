@@ -47,19 +47,22 @@ def test_request_count_increments_after_health_call():
 
 
 def test_prediction_count_increments_by_urgency_class():
-    metric = 'predictions_total{urgency_class="urgent"}'
+    payload = {
+        "condition_label": 4,
+        "medical_abstract": "Patient with acute cardiac arrest",
+    }
+
+    first = client.post("/predict", json=payload)
+    assert first.status_code == 200
+
+    urgency = first.json()["urgency_prediction"]
+    metric = f'predictions_total{{urgency_class="{urgency}"}}'
     before = _metric_value(client.get("/metrics").text, metric)
 
-    client.post(
-        "/predict",
-        json={
-            "condition_label": 4,
-            "medical_abstract": "Patient with acute cardiac arrest",
-        },
-    )
+    second = client.post("/predict", json=payload)
+    assert second.status_code == 200
 
     after = _metric_value(client.get("/metrics").text, metric)
-
     assert after == before + 1
 
 

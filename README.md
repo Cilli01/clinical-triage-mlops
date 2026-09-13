@@ -30,16 +30,17 @@ flowchart TB
     end
 
     Build -.->|"imagem publicada"| API
-    Model -.->|"carregar modelo real - pendente"| API
+    Model -->|"carregar modelo treinado"| API
     Graf --> Equipe["Equipe / Observabilidade"]
     Stack -.->|"deploy planejado"| Cloud["AWS ECS Fargate + ALB"]
 ```
 
 **Legenda:** setas sólidas representam fluxo implementado e em uso hoje;
 setas tracejadas representam integrações planejadas na especificação do
-desafio mas ainda pendentes de implementação (carregamento do modelo
-treinado na API, que hoje responde com uma regra mock, e o deploy em
-nuvem, que hoje existe apenas como decisão documentada na seção 2).
+desafio mas ainda pendentes de implementação (publicação da imagem no
+registry e o deploy em nuvem, que hoje existe apenas como decisão
+documentada na seção 2). O modelo treinado já é carregado pela API em
+`/predict`.
 
 ---
 
@@ -108,14 +109,22 @@ clinical-triage-mlops/
 │   ├── api/                          # Código-fonte da API FastAPI
 │   │   ├── __init__.py
 │   │   ├── main.py                   # Rotas /health, /predict e /metrics
+│   │   ├── predictor.py              # Carga do modelo e inferência
 │   │   └── schemas.py                # Schemas Pydantic (request/response)
-│   └── data/                         # Módulo de pré-processamento de dados
+│   ├── data/                         # Módulo de pré-processamento de dados
+│   │   ├── __init__.py
+│   │   └── preprocess.py             # Mapeamento de especialidades → urgência
+│   └── model/                        # Treino do classificador NLP
 │       ├── __init__.py
-│       └── preprocess.py             # Mapeamento de especialidades → urgência
+│       └── train.py                  # Pipeline TF-IDF + Random Forest
+├── models/
+│   └── metrics.json                  # Métricas do último treino
 ├── tests/
+│   ├── conftest.py                   # Modelo leve para testes da API
 │   ├── test_api.py                   # Testes dos endpoints /health e /predict
 │   ├── test_metrics.py               # Testes da instrumentação Prometheus
-│   └── test_preprocess.py            # Testes do pré-processamento de dados
+│   ├── test_preprocess.py            # Testes do pré-processamento de dados
+│   └── test_train.py                 # Testes do pipeline de treino
 ├── .pre-commit-config.yaml           # Hooks de pre-commit (Ruff lint + format)
 ├── docker-compose.yml                # Orquestração local da API, Prometheus e Grafana
 ├── Dockerfile                        # Instruções de empacotamento da API
@@ -158,6 +167,12 @@ uv sync
 ```
 
 ### 5.3. Executando a API Localmente (Modo Desenvolvimento)
+Antes de subir a API, gere o artefato do modelo (caso ainda não exista em `models/`):
+
+```bash
+uv run python -m src.model.train
+```
+
 Com o ambiente ativado, você pode iniciar o servidor FastAPI local para desenvolvimento:
 
 ```bash

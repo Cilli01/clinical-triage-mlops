@@ -17,6 +17,8 @@ tests/
 data/raw/
 data/processed/
 
+models/*.joblib
+
 .env
 .env.*
 
