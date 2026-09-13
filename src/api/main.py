@@ -3,6 +3,7 @@ import time
 from fastapi import FastAPI, HTTPException, Request, Response
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
+from .predictor import predict_urgency
 from .schemas import MedicalReport, PredictResponses
 
 app = FastAPI(
@@ -93,28 +94,16 @@ def predict(report: MedicalReport):
     """
     start_time = time.perf_counter()
 
-    if not report.medical_abstract.strip():
+    abstract = report.medical_abstract.strip()
+    if not abstract:
         ERROR_COUNT.labels(endpoint="/predict", error_type="empty_abstract").inc()
         raise HTTPException(status_code=400, detail="Medical abstract is required")
 
-    medical_abstract_lower = report.medical_abstract.strip().lower()
-
-    # mock
-    if any(
-        word in medical_abstract_lower
-        for word in ["heart", "cardiac", "stroke", "infarction", "apnea", "brain"]
-    ):
-        urgency = "urgent"
-        confidence = 0.95
-    elif any(
-        word in medical_abstract_lower
-        for word in ["stomach", "gastric", "tumor", "cancer", "hepatic", "infection"]
-    ):
-        urgency = "attention"
-        confidence = 0.82
-    else:
-        urgency = "normal"
-        confidence = 0.70
+    try:
+        urgency, confidence = predict_urgency(abstract)
+    except FileNotFoundError as exc:
+        ERROR_COUNT.labels(endpoint="/predict", error_type="model_unavailable").inc()
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     PREDICTION_COUNT.labels(urgency_class=urgency).inc()
 

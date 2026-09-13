@@ -24,9 +24,10 @@ def test_predict_success():
 
     data = response.json()
 
-    assert data["urgency_prediction"] == "urgent"
+    assert data["urgency_prediction"] in {"normal", "attention", "urgent"}
     assert "confidence_score" in data
     assert isinstance(data["confidence_score"], float)
+    assert 0.0 <= data["confidence_score"] <= 1.0
     assert "latency_ms" in data
     assert data["latency_ms"] >= 0
 

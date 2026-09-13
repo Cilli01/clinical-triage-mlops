@@ -30,16 +30,16 @@ flowchart TB
     end
 
     Build -.->|"imagem publicada"| API
-    Model -.->|"carregar modelo real - pendente"| API
+    Model -->|"carregar modelo treinado"| API
     Graf --> Equipe["Equipe / Observabilidade"]
     Stack -.->|"deploy planejado"| Cloud["AWS ECS Fargate + ALB"]
 ```
 
 **Legenda:** setas sólidas representam fluxo implementado e em uso hoje;
 setas tracejadas representam integrações planejadas na especificação do
-desafio mas ainda pendentes de implementação (carregamento do modelo
-treinado na API, que hoje responde com uma regra mock, e o deploy em
-nuvem, que hoje existe apenas como decisão documentada na seção 2).
+desafio mas ainda pendentes (publicação da imagem no registry e o deploy
+em nuvem, documentado na seção 2). A API já carrega o modelo em `/predict`
+e a DAG de retreino está em `dags/clinical_triage_retrain.py`.
 
 ---
 
@@ -104,18 +104,36 @@ clinical-triage-mlops/
 │   └── prometheus.yml                # Configuração de scrape do Prometheus
 ├── scripts/
 │   └── generate_traffic.py           # Gera tráfego sintético para validar o dashboard
+├── dags/
+│   └── clinical_triage_retrain.py     # DAG Airflow (preprocess → treino → ONNX)
 ├── src/
 │   ├── api/                          # Código-fonte da API FastAPI
 │   │   ├── __init__.py
 │   │   ├── main.py                   # Rotas /health, /predict e /metrics
+│   │   ├── predictor.py              # Carga do modelo e inferência
 │   │   └── schemas.py                # Schemas Pydantic (request/response)
-│   └── data/                         # Módulo de pré-processamento de dados
+│   ├── data/                         # Módulo de pré-processamento de dados
+│   │   ├── __init__.py
+│   │   └── preprocess.py             # Mapeamento de especialidades → urgência
+│   ├── model/                        # Treino do classificador NLP
+│   │   ├── __init__.py
+│   │   ├── train.py                  # Pipeline TF-IDF + Random Forest
+│   │   ├── export_onnx.py            # Exportação do classificador para ONNX
+│   │   └── benchmark.py              # Comparativo de latência sklearn vs ONNX
+│   └── orchestration/                # Etapas reutilizadas pela DAG
 │       ├── __init__.py
-│       └── preprocess.py             # Mapeamento de especialidades → urgência
+│       └── pipeline.py               # preprocess → train → export
+├── models/
+│   ├── metrics.json                  # Métricas do último treino
+│   └── latency_benchmark.json        # Resultado do benchmark de latência
 ├── tests/
+│   ├── conftest.py                   # Modelo leve para testes da API
 │   ├── test_api.py                   # Testes dos endpoints /health e /predict
+│   ├── test_export_onnx.py           # Testes da exportação ONNX
 │   ├── test_metrics.py               # Testes da instrumentação Prometheus
-│   └── test_preprocess.py            # Testes do pré-processamento de dados
+│   ├── test_orchestration.py         # Testes do pipeline / DAG
+│   ├── test_preprocess.py            # Testes do pré-processamento de dados
+│   └── test_train.py                 # Testes do pipeline de treino
 ├── .pre-commit-config.yaml           # Hooks de pre-commit (Ruff lint + format)
 ├── docker-compose.yml                # Orquestração local da API, Prometheus e Grafana
 ├── Dockerfile                        # Instruções de empacotamento da API
@@ -128,12 +146,18 @@ clinical-triage-mlops/
 
 ## 4. Desempenho e Comparativo de Latência
 
-A tabela abaixo registra o progresso das métricas de performance do modelo à medida que as técnicas de otimização de latência (Etapa 4) forem implementadas no projeto.
+A tabela abaixo compara o pipeline sklearn (baseline) com a inferência
+otimizada via ONNX Runtime. O TF-IDF permanece em joblib e o Random Forest
+é exportado para ONNX — a acurácia/F1 se mantém e a latência cai de forma
+expressiva. Números gerados com `python -m src.model.benchmark`
+(amostra de 50 laudos do conjunto de teste).
 
-| Modelo / Abordagem | Acurácia (mAP/F1) | Latência Média (ms) | Taxa de Vazão (Req/s) | Status |
+| Modelo / Abordagem | Acurácia (F1 macro) | Latência Média (ms) | Taxa de Vazão (Req/s) | Status |
 | :--- | :---: | :---: | :---: | :---: |
-| **Modelo Base (TF-IDF + Random Forest)** | *[A preencher]* | *[A preencher]* | *[A preencher]* | Baseline (Etapa 1) |
-| **Modelo Otimizado (ONNX Runtime)** | *[A preencher]* | *[A preencher]* | *[A preencher]* | Otimizado (Etapa 4) |
+| **Modelo Base (TF-IDF + Random Forest)** | 0.52 | 72.87 | 13.72 | Baseline |
+| **Modelo Otimizado (ONNX Runtime)** | 0.52 | 2.44 | 410.66 | Otimizado |
+
+O detalhamento completo está em `models/latency_benchmark.json`.
 
 ---
 
@@ -158,6 +182,21 @@ uv sync
 ```
 
 ### 5.3. Executando a API Localmente (Modo Desenvolvimento)
+Antes de subir a API, gere o artefato do modelo (caso ainda não exista em `models/`):
+
+```bash
+uv run python -m src.model.train
+```
+
+Para exportar o classificador para ONNX (se o treino não tiver gerado o artefato)
+e medir a latência:
+
+```bash
+uv sync --extra optimize
+uv run python -m src.model.export_onnx
+uv run python -m src.model.benchmark
+```
+
 Com o ambiente ativado, você pode iniciar o servidor FastAPI local para desenvolvimento:
 
 ```bash
@@ -185,5 +224,39 @@ docker-compose up --build -d
 
 Para o detalhamento das métricas expostas, dos painéis do dashboard e do
 passo a passo de validação local, consulte [`docs/monitoring.md`](docs/monitoring.md).
+
+### 5.5. Orquestração de Retreino (Apache Airflow)
+
+A DAG `clinical_triage_retrain` em `dags/` executa semanalmente:
+
+1. preprocessamento dos CSVs brutos
+2. treino do classificador TF-IDF + Random Forest
+3. exportação do modelo para ONNX
+
+As mesmas etapas podem rodar sem o Airflow (útil para debug local):
+
+```bash
+uv sync --extra optimize
+uv run python -m src.orchestration.pipeline
+```
+
+Para registrar a DAG no Airflow (ambiente isolado do extra `orchestration`):
+
+```bash
+uv sync --extra orchestration --extra optimize
+export AIRFLOW_HOME="$(pwd)/.airflow"
+export AIRFLOW__CORE__DAGS_FOLDER="$(pwd)/dags"
+export AIRFLOW__CORE__LOAD_EXAMPLES=False
+export PYTHONPATH="$(pwd)"
+
+uv run airflow db migrate
+uv run airflow dags list
+uv run airflow dags test clinical_triage_retrain 2024-01-01
+```
+
+A UI padrão fica em `http://localhost:8080` após `uv run airflow standalone`
+(usuário/senha gerados no primeiro start). O Airflow não entra na imagem
+Docker da API de propósito — a orquestração de treino fica desacoplada do
+serviço de inferência.
 
 ---

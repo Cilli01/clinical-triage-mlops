@@ -12,7 +12,8 @@ dependencies = [
     "pydantic>=2.6.0",
     "pandas>=2.2.0",
     "scikit-learn>=1.4.0", # Necessário para carregar e executar o modelo NLP final [1, 3]
-    "prometheus-client>=0.20.0" # Exposição de métricas para Prometheus scrapear em /metrics
+    "prometheus-client>=0.20.0", # Exposição de métricas para Prometheus scrapear em /metrics
+    "onnxruntime>=1.30.0", # Inferência otimizada do classificador exportado
 ]
 
 # Dependências OPCIONAIS (não entram na imagem Docker da API)
@@ -21,7 +22,9 @@ dev = [
     "ruff>=0.3.0",
     "pre-commit>=3.6.0",
     "pytest>=8.0.0",
-    "httpx>=0.27.0"
+    "httpx>=0.27.0",
+    "onnx>=1.22.0",
+    "skl2onnx>=1.20.0",
 ]
 eda = [
     "matplotlib>=3.8.0",
@@ -30,11 +33,15 @@ eda = [
 orchestration = [
     "apache-airflow>=2.8.0" # O Airflow é gigantesco e roda de forma isolada [3, 4]
 ]
+optimize = [
+    "onnx>=1.22.0",
+    "skl2onnx>=1.20.0",
+]
 
 [tool.ruff]
 target-version = "py312"
 line-length = 88
-extend-exclude = ["eda.ipynb"]
+extend-exclude = ["eda.ipynb", "dags"]
 
 [tool.ruff.lint]
 # Regras essenciais: Pycodestyle, Pyflakes e Isort para organização automática de imports

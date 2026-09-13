@@ -220,3 +220,13 @@ __marimo__/
 
 # tech-challenge instructions
 tech-challenge-fase-3.md
+
+# Artefatos de modelo (regenerados via: python -m src.model.train)
+models/*.joblib
+models/*.onnx
+# Airflow (ambiente local de orquestracao)
+.airflow/
+airflow.cfg
+airflow.db
+airflow.db-*
+logs/

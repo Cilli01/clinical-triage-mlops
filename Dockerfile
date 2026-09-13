@@ -7,6 +7,7 @@ WORKDIR /app
 
 COPY pyproject.toml README.md ./
 COPY src/ ./src/
+COPY models/ ./models/
 
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir .
