@@ -18,6 +18,7 @@ data/raw/
 data/processed/
 
 models/*.joblib
+models/*.onnx
 
 .env
 .env.*

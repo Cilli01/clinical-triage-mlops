@@ -37,10 +37,9 @@ flowchart TB
 
 **Legenda:** setas sólidas representam fluxo implementado e em uso hoje;
 setas tracejadas representam integrações planejadas na especificação do
-desafio mas ainda pendentes de implementação (publicação da imagem no
-registry e o deploy em nuvem, que hoje existe apenas como decisão
-documentada na seção 2). O modelo treinado já é carregado pela API em
-`/predict`.
+desafio mas ainda pendentes (publicação da imagem no registry e o deploy
+em nuvem, documentado na seção 2). A API já carrega o modelo otimizado
+em `/predict` (ONNX quando disponivel).
 
 ---
 
@@ -114,14 +113,18 @@ clinical-triage-mlops/
 │   ├── data/                         # Módulo de pré-processamento de dados
 │   │   ├── __init__.py
 │   │   └── preprocess.py             # Mapeamento de especialidades → urgência
-│   └── model/                        # Treino do classificador NLP
-│       ├── __init__.py
-│       └── train.py                  # Pipeline TF-IDF + Random Forest
+│   ├── model/                        # Treino do classificador NLP
+│   │   ├── __init__.py
+│   │   ├── train.py                  # Pipeline TF-IDF + Random Forest
+│   │   ├── export_onnx.py            # Exportação do classificador para ONNX
+│   │   └── benchmark.py              # Comparativo de latência sklearn vs ONNX
 ├── models/
-│   └── metrics.json                  # Métricas do último treino
+│   ├── metrics.json                  # Métricas do último treino
+│   └── latency_benchmark.json        # Resultado do benchmark de latência
 ├── tests/
 │   ├── conftest.py                   # Modelo leve para testes da API
 │   ├── test_api.py                   # Testes dos endpoints /health e /predict
+│   ├── test_export_onnx.py           # Testes da exportação ONNX
 │   ├── test_metrics.py               # Testes da instrumentação Prometheus
 │   ├── test_preprocess.py            # Testes do pré-processamento de dados
 │   └── test_train.py                 # Testes do pipeline de treino
@@ -137,12 +140,18 @@ clinical-triage-mlops/
 
 ## 4. Desempenho e Comparativo de Latência
 
-A tabela abaixo registra o progresso das métricas de performance do modelo à medida que as técnicas de otimização de latência (Etapa 4) forem implementadas no projeto.
+A tabela abaixo compara o pipeline sklearn (baseline) com a inferência
+otimizada via ONNX Runtime. O TF-IDF permanece em joblib e o Random Forest
+é exportado para ONNX — a acurácia/F1 se mantém e a latência cai de forma
+expressiva. Números gerados com `python -m src.model.benchmark`
+(amostra de 50 laudos do conjunto de teste).
 
-| Modelo / Abordagem | Acurácia (mAP/F1) | Latência Média (ms) | Taxa de Vazão (Req/s) | Status |
+| Modelo / Abordagem | Acurácia (F1 macro) | Latência Média (ms) | Taxa de Vazão (Req/s) | Status |
 | :--- | :---: | :---: | :---: | :---: |
-| **Modelo Base (TF-IDF + Random Forest)** | *[A preencher]* | *[A preencher]* | *[A preencher]* | Baseline (Etapa 1) |
-| **Modelo Otimizado (ONNX Runtime)** | *[A preencher]* | *[A preencher]* | *[A preencher]* | Otimizado (Etapa 4) |
+| **Modelo Base (TF-IDF + Random Forest)** | 0.52 | 72.87 | 13.72 | Baseline |
+| **Modelo Otimizado (ONNX Runtime)** | 0.52 | 2.44 | 410.66 | Otimizado |
+
+O detalhamento completo está em `models/latency_benchmark.json`.
 
 ---
 
@@ -171,6 +180,15 @@ Antes de subir a API, gere o artefato do modelo (caso ainda não exista em `mode
 
 ```bash
 uv run python -m src.model.train
+```
+
+Para exportar o classificador para ONNX (se o treino não tiver gerado o artefato)
+e medir a latência:
+
+```bash
+uv sync --extra optimize
+uv run python -m src.model.export_onnx
+uv run python -m src.model.benchmark
 ```
 
 Com o ambiente ativado, você pode iniciar o servidor FastAPI local para desenvolvimento:

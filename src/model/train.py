@@ -139,6 +139,17 @@ def main() -> None:
     print(f"F1 macro: {metrics['f1_macro']:.4f}")
     print(f"F1 weighted: {metrics['f1_weighted']:.4f}")
 
+    try:
+        from .export_onnx import export_onnx
+
+        onnx_path = export_onnx()
+        print(f"ONNX salvo em: {onnx_path}")
+    except ImportError:
+        print(
+            "Exportação ONNX ignorada (instale o extra optimize: "
+            "uv sync --extra optimize)."
+        )
+
 
 if __name__ == "__main__":
     main()

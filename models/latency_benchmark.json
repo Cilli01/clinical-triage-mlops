@@ -1,0 +1,17 @@
+{
+  "sklearn": {
+    "model": "TF-IDF + Random Forest",
+    "accuracy": 0.5228531855955678,
+    "f1_macro": 0.5166214558581733,
+    "latency_ms": 72.871,
+    "throughput_rps": 13.72
+  },
+  "onnx": {
+    "model": "TF-IDF + Random Forest (ONNX Runtime)",
+    "accuracy": 0.5228531855955678,
+    "f1_macro": 0.5166214558581733,
+    "latency_ms": 2.435,
+    "throughput_rps": 410.66
+  },
+  "sample_size": 50
+}

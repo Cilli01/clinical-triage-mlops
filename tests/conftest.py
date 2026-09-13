@@ -43,6 +43,7 @@ def trained_model_path(tmp_path_factory):
 @pytest.fixture(autouse=True)
 def _configure_test_model(trained_model_path, monkeypatch):
     monkeypatch.setenv("MODEL_PATH", str(trained_model_path))
+    monkeypatch.setenv("MODEL_BACKEND", "sklearn")
     reset_pipeline()
     yield
     reset_pipeline()
