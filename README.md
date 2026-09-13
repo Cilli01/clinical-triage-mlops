@@ -38,8 +38,8 @@ flowchart TB
 **Legenda:** setas sólidas representam fluxo implementado e em uso hoje;
 setas tracejadas representam integrações planejadas na especificação do
 desafio mas ainda pendentes (publicação da imagem no registry e o deploy
-em nuvem, documentado na seção 2). A API já carrega o modelo otimizado
-em `/predict` (ONNX quando disponivel).
+em nuvem, documentado na seção 2). A API já carrega o modelo em `/predict`
+e a DAG de retreino está em `dags/clinical_triage_retrain.py`.
 
 ---
 
@@ -104,6 +104,8 @@ clinical-triage-mlops/
 │   └── prometheus.yml                # Configuração de scrape do Prometheus
 ├── scripts/
 │   └── generate_traffic.py           # Gera tráfego sintético para validar o dashboard
+├── dags/
+│   └── clinical_triage_retrain.py     # DAG Airflow (preprocess → treino → ONNX)
 ├── src/
 │   ├── api/                          # Código-fonte da API FastAPI
 │   │   ├── __init__.py
@@ -118,6 +120,9 @@ clinical-triage-mlops/
 │   │   ├── train.py                  # Pipeline TF-IDF + Random Forest
 │   │   ├── export_onnx.py            # Exportação do classificador para ONNX
 │   │   └── benchmark.py              # Comparativo de latência sklearn vs ONNX
+│   └── orchestration/                # Etapas reutilizadas pela DAG
+│       ├── __init__.py
+│       └── pipeline.py               # preprocess → train → export
 ├── models/
 │   ├── metrics.json                  # Métricas do último treino
 │   └── latency_benchmark.json        # Resultado do benchmark de latência
@@ -126,6 +131,7 @@ clinical-triage-mlops/
 │   ├── test_api.py                   # Testes dos endpoints /health e /predict
 │   ├── test_export_onnx.py           # Testes da exportação ONNX
 │   ├── test_metrics.py               # Testes da instrumentação Prometheus
+│   ├── test_orchestration.py         # Testes do pipeline / DAG
 │   ├── test_preprocess.py            # Testes do pré-processamento de dados
 │   └── test_train.py                 # Testes do pipeline de treino
 ├── .pre-commit-config.yaml           # Hooks de pre-commit (Ruff lint + format)
@@ -218,5 +224,39 @@ docker-compose up --build -d
 
 Para o detalhamento das métricas expostas, dos painéis do dashboard e do
 passo a passo de validação local, consulte [`docs/monitoring.md`](docs/monitoring.md).
+
+### 5.5. Orquestração de Retreino (Apache Airflow)
+
+A DAG `clinical_triage_retrain` em `dags/` executa semanalmente:
+
+1. preprocessamento dos CSVs brutos
+2. treino do classificador TF-IDF + Random Forest
+3. exportação do modelo para ONNX
+
+As mesmas etapas podem rodar sem o Airflow (útil para debug local):
+
+```bash
+uv sync --extra optimize
+uv run python -m src.orchestration.pipeline
+```
+
+Para registrar a DAG no Airflow (ambiente isolado do extra `orchestration`):
+
+```bash
+uv sync --extra orchestration --extra optimize
+export AIRFLOW_HOME="$(pwd)/.airflow"
+export AIRFLOW__CORE__DAGS_FOLDER="$(pwd)/dags"
+export AIRFLOW__CORE__LOAD_EXAMPLES=False
+export PYTHONPATH="$(pwd)"
+
+uv run airflow db migrate
+uv run airflow dags list
+uv run airflow dags test clinical_triage_retrain 2024-01-01
+```
+
+A UI padrão fica em `http://localhost:8080` após `uv run airflow standalone`
+(usuário/senha gerados no primeiro start). O Airflow não entra na imagem
+Docker da API de propósito — a orquestração de treino fica desacoplada do
+serviço de inferência.
 
 ---
