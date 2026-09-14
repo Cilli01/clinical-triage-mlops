@@ -4,8 +4,9 @@
 #   lint:         checagem de estilo e formatacao (Ruff).
 #   test:         suite de testes automatizados (pytest).
 #   docker-build: valida que a imagem Docker builda corretamente.
-#   deploy:       roda so no push direto na main (pos-merge) - sobe/atualiza
-#                 a stack (API + Prometheus + Grafana) na VPS via SSH.
+#   deploy:       roda so no push direto na main (pos-merge) - na VPS via SSH,
+#                 treina/exporta o modelo (nao versionado) e sobe/atualiza a
+#                 stack (API + Prometheus + Grafana).
 #
 # Segredos necessarios para o job de deploy (Settings -> Secrets and
 # variables -> Actions):
@@ -113,6 +114,22 @@ jobs:
             fi
             cd "$PROJECT_PATH"
             git pull origin main
+
+            echo "--- Preparando ambiente Python (uv) ---"
+            export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+            if ! command -v uv >/dev/null 2>&1; then
+              echo "uv nao encontrado, instalando..."
+              curl -LsSf https://astral.sh/uv/install.sh | sh
+              export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+            fi
+
+            echo "--- Treinando o modelo ---"
+            # O Dockerfile espera o artefato em models/, mas ele e gitignored
+            # (nao versionamos binario). Como os CSVs de treino estao no repo,
+            # treinamos aqui antes do build da imagem. Com o extra "optimize"
+            # instalado, train.py ja exporta pra ONNX automaticamente.
+            uv sync --extra optimize --frozen
+            uv run python -m src.model.train
 
             echo "--- Construindo e subindo a stack ---"
             # up -d --build garante que os containers usem a imagem recem-buildada
