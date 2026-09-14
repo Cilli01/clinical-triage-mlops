@@ -12,34 +12,39 @@ O projeto adota práticas rigorosas de MLOps, abrangendo desde a concepção arq
 ```mermaid
 flowchart TB
     subgraph CICD["CI/CD - GitHub Actions"]
-        Push["Push / Pull Request"] --> Lint["Lint - Ruff"]
+        Push["Push na main"] --> Lint["Lint - Ruff"]
         Lint --> Test["Testes - pytest"]
-        Test --> Build["Build da imagem Docker"]
+        Test --> Build["Build Docker (validacao)"]
+        Build --> Deploy["Deploy via SSH"]
     end
 
-    subgraph Treino["Orquestracao de Treino - Apache Airflow"]
+    subgraph Treino["Treino do Modelo - TF-IDF + Random Forest -> ONNX"]
         Raw[("Dataset Medical TC")] --> Prep["Pre-processamento"]
-        Prep --> Train["Treino do classificador NLP"]
-        Train --> Model["Modelo treinado / otimizado (ONNX)"]
+        Prep --> Train["src.model.train"]
+        Train --> Model["Modelo treinado<br/>(models/, nao versionado)"]
     end
 
-    subgraph Stack["Stack Local - Docker Compose"]
+    Airflow["DAG Airflow clinical_triage_retrain<br/>(execucao local/manual)"] -.->|"orquestra as mesmas etapas"| Treino
+
+    subgraph Stack["Stack na VPS - Docker Compose"]
         Hospital["Laudo medico"] --> API["API FastAPI<br/>/predict /health /metrics"]
         API --> Prom["Prometheus"]
         Prom --> Graf["Grafana Dashboard"]
     end
 
-    Build -.->|"imagem publicada"| API
-    Model -->|"carregar modelo treinado"| API
+    Deploy -->|"roda o treino na VPS<br/>antes do build"| Treino
+    Model --> API
     Graf --> Equipe["Equipe / Observabilidade"]
-    Stack -.->|"deploy planejado"| Cloud["AWS ECS Fargate + ALB"]
 ```
 
-**Legenda:** setas sólidas representam fluxo implementado e em uso hoje;
-setas tracejadas representam integrações planejadas na especificação do
-desafio mas ainda pendentes (publicação da imagem no registry e o deploy
-em nuvem, documentado na seção 2). A API já carrega o modelo em `/predict`
-e a DAG de retreino está em `dags/clinical_triage_retrain.py`.
+**Legenda:** setas sólidas representam fluxo implementado e em uso hoje —
+incluindo o deploy automatizado, que já está no ar (seção 5.4). A seta
+tracejada é a única parte ainda não automatizada: a DAG do Airflow orquestra
+as mesmas etapas de treino, mas hoje roda local/manualmente, não agendada em
+produção. **Nota:** a decisão de arquitetura da seção 2 (AWS ECS Fargate)
+é a recomendação teórica para produção real; a demonstração/avaliação deste
+desafio roda numa VPS via SSH (mais simples e suficiente para o escopo do
+projeto), não na AWS.
 
 ---
 
@@ -224,6 +229,19 @@ docker-compose up --build -d
 
 Para o detalhamento das métricas expostas, dos painéis do dashboard e do
 passo a passo de validação local, consulte [`docs/monitoring.md`](docs/monitoring.md).
+
+#### Instância em Produção (VPS)
+
+A stack também está no ar na VPS do grupo para avaliação:
+
+*   **API:** `http://82.29.57.75:8000` (docs em `/docs`)
+*   **Prometheus:** `http://82.29.57.75:9090`
+*   **Grafana:** `http://82.29.57.75:3000` — usuário `admin`, senha `mlfiap2026`
+
+A senha do Grafana nessa instância foi trocada manualmente via UI e fica
+salva no volume `grafana_data`; um novo deploy a partir de um volume vazio
+faz a senha voltar ao padrão `admin/admin`. Acesso temporário, mantido só
+para a avaliação — o serviço será derrubado em seguida.
 
 ### 5.5. Orquestração de Retreino (Apache Airflow)
 
