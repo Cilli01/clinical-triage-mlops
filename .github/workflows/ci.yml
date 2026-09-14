@@ -113,6 +113,11 @@ jobs:
               git clone "$REPO_URL" "$PROJECT_PATH"
             fi
             cd "$PROJECT_PATH"
+            # O treino roda a cada deploy e nao e deterministico, entao
+            # models/metrics.json sempre fica com diff local depois da
+            # rodada anterior. Descarta antes de puxar pra o pull nunca
+            # travar por causa de um artefato gerado, nao editado a mao.
+            git reset --hard HEAD
             git pull origin main
 
             echo "--- Preparando ambiente Python (uv) ---"
