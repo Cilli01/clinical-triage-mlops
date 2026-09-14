@@ -1,0 +1,14 @@
+[Unit]
+Description=Gerador de trafego sintetico para o dashboard Grafana (Clinical Triage)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/mlfiap2026/clinical-triage-mlops
+ExecStart=/usr/bin/python3 -u scripts/generate_traffic.py --forever --interval 3 --base-url http://localhost:8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

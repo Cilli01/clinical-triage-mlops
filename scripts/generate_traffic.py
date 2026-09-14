@@ -11,9 +11,14 @@ minoria e urgente), em vez de alternar igualmente entre as tres classes.
 
 Uso:
     uv run python scripts/generate_traffic.py --requests 200 --interval 0.2
+
+Para manter o dashboard sempre com dados (ex.: demonstracao/avaliacao),
+use --forever para rodar indefinidamente ate ser interrompido:
+    uv run python scripts/generate_traffic.py --forever --interval 3
 """
 
 import argparse
+import itertools
 import json
 import random
 import time
@@ -77,21 +82,31 @@ def main() -> None:
     parser.add_argument("--base-url", default="http://localhost:8000")
     parser.add_argument("--requests", type=int, default=100)
     parser.add_argument("--interval", type=float, default=0.3)
+    parser.add_argument(
+        "--forever",
+        action="store_true",
+        help="Ignora --requests e gera trafego indefinidamente, ate ser interrompido.",
+    )
     args = parser.parse_args()
 
     urgencies = list(URGENCY_WEIGHTS.keys())
     weights = list(URGENCY_WEIGHTS.values())
 
-    for i in range(args.requests):
-        urgency = random.choices(urgencies, weights=weights, k=1)[0]
-        abstract = random.choice(ABSTRACTS_BY_URGENCY[urgency])
+    iterator = itertools.count() if args.forever else range(args.requests)
 
-        call_predict(args.base_url, urgency, abstract)
+    try:
+        for i in iterator:
+            urgency = random.choices(urgencies, weights=weights, k=1)[0]
+            abstract = random.choice(ABSTRACTS_BY_URGENCY[urgency])
 
-        if i % 5 == 0:
-            call_health(args.base_url)
+            call_predict(args.base_url, urgency, abstract)
 
-        time.sleep(args.interval)
+            if i % 5 == 0:
+                call_health(args.base_url)
+
+            time.sleep(args.interval)
+    except KeyboardInterrupt:
+        print("Interrompido.")
 
 
 if __name__ == "__main__":
