@@ -225,6 +225,19 @@ docker-compose up --build -d
 Para o detalhamento das métricas expostas, dos painéis do dashboard e do
 passo a passo de validação local, consulte [`docs/monitoring.md`](docs/monitoring.md).
 
+#### Instância em Produção (VPS)
+
+A stack também está no ar na VPS do grupo para avaliação:
+
+*   **API:** `http://82.29.57.75:8000` (docs em `/docs`)
+*   **Prometheus:** `http://82.29.57.75:9090`
+*   **Grafana:** `http://82.29.57.75:3000` — usuário `admin`, senha `mlfiap2026`
+
+A senha do Grafana nessa instância foi trocada manualmente via UI e fica
+salva no volume `grafana_data`; um novo deploy a partir de um volume vazio
+faz a senha voltar ao padrão `admin/admin`. Acesso temporário, mantido só
+para a avaliação — o serviço será derrubado em seguida.
+
 ### 5.5. Orquestração de Retreino (Apache Airflow)
 
 A DAG `clinical_triage_retrain` em `dags/` executa semanalmente:

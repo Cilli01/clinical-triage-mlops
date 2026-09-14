@@ -73,6 +73,24 @@ uv run python scripts/generate_traffic.py --requests 200 --interval 0.2
 # http://localhost:3000  (usuario: admin / senha: admin)
 ```
 
+## 4. Acesso à instância em produção (VPS)
+
+A stack também está no ar na VPS do grupo para avaliação:
+
+*   **Grafana:** `http://82.29.57.75:3000` — usuário `admin`, senha `mlfiap2026`
+*   **API:** `http://82.29.57.75:8000` (docs em `/docs`)
+*   **Prometheus:** `http://82.29.57.75:9090`
+
+A senha do Grafana nessa instância foi trocada manualmente via UI (o
+`docker-compose.yml` continua com o padrão `admin/admin`). Essa senha
+customizada fica salva no volume `grafana_data` — se a stack for
+derrubada com `docker compose down -v` (removendo volumes) ou passar
+por um novo deploy do zero num volume vazio, o Grafana reinicia sem
+histórico e a senha volta a ser `admin/admin`.
+
+Esse acesso é temporário, mantido só para a avaliação do professor;
+o serviço será derrubado logo em seguida.
+
 Uma evidência de execução real (screenshot do dashboard com dados, capturado
 após subir a stack e gerar tráfego com o script acima) fica em
 [`docs/evidencias/grafana-dashboard.png`](evidencias/grafana-dashboard.png).
