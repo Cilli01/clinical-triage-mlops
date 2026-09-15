@@ -5,6 +5,14 @@ Este repositório contém a solução completa para o sistema de triagem automá
 
 O projeto adota práticas rigorosas de MLOps, abrangendo desde a concepção arquitetural e a otimização de latência do modelo de Processamento de Linguagem Natural (NLP) até a orquestração de pipelines de retreino, CI/CD e monitoramento em tempo real.
 
+## Vídeo de Demonstração (STAR)
+
+Demonstração do sistema em até 5 minutos, no formato Situation / Task / Action / Result:
+
+- [Assistir no YouTube](https://youtu.be/wEQvHNZBo2E)
+
+O vídeo cobre a API de triagem, otimização ONNX, orquestração de retreino, CI/CD e monitoramento.
+
 ---
 
 ## Visão Geral da Arquitetura
